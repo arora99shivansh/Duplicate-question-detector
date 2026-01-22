@@ -1,0 +1,71 @@
+# --------------------
+# Python
+# --------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+
+# --------------------
+# Virtual Environments
+# --------------------
+venv/
+env/
+.env/
+.venv/
+
+# --------------------
+# Jupyter / Notebooks
+# --------------------
+.ipynb_checkpoints/
+
+# --------------------
+# ML / Data
+# --------------------
+*.h5
+*.joblib
+*.npy
+*.npz
+
+# (OPTIONAL: ignore large CSVs if needed)
+# train.csv
+# test.csv
+
+# --------------------
+# Logs
+# --------------------
+*.log
+
+# --------------------
+# OS files
+# --------------------
+.DS_Store
+Thumbs.db
+
+# --------------------
+# VS Code / IDE
+# --------------------
+.vscode/
+.idea/
+
+# --------------------
+# Flask
+# --------------------
+instance/
+*.sqlite3
+
+# --------------------
+# Docker
+# --------------------
+*.tar
+
+# --------------------
+# Secrets
+# --------------------
+.env
+test.csv
+train.csv
