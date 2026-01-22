@@ -6,11 +6,16 @@ from fuzzywuzzy import fuzz
 
 app = Flask(__name__)
 
-# load model and vectorizer
-model = pickle.load(open('model.pkl', 'rb'))
-cv = pickle.load(open('cv.pkl', 'rb'))
+# ---------------- load artifacts ----------------
+def load_artifacts():
+    global model, cv, EXPECTED_FEATURES
+    with open('model.pkl', 'rb') as f:
+        model = pickle.load(f)
+    with open('cv.pkl', 'rb') as f:
+        cv = pickle.load(f)
+    EXPECTED_FEATURES = model.n_features_in_
 
-EXPECTED_FEATURES = model.n_features_in_   # 6022
+load_artifacts()
 
 # ---------------- preprocessing ----------------
 def preprocess(text):
@@ -24,11 +29,9 @@ def get_features(q1, q2):
     q1 = preprocess(q1)
     q2 = preprocess(q2)
 
-    # BOW
     bow = cv.transform([q1, q2]).toarray()
     features = np.hstack((bow[0], bow[1]))
 
-    # fuzzy features
     fuzzy = np.array([
         fuzz.QRatio(q1, q2),
         fuzz.partial_ratio(q1, q2),
@@ -38,11 +41,9 @@ def get_features(q1, q2):
 
     features = np.hstack((features, fuzzy))
 
-    # -------- FORCE FEATURE SIZE MATCH --------
     if features.shape[0] < EXPECTED_FEATURES:
-        pad = EXPECTED_FEATURES - features.shape[0]
-        features = np.hstack((features, np.zeros(pad)))
-    elif features.shape[0] > EXPECTED_FEATURES:
+        features = np.hstack((features, np.zeros(EXPECTED_FEATURES - features.shape[0])))
+    else:
         features = features[:EXPECTED_FEATURES]
 
     return features.reshape(1, -1)
@@ -57,12 +58,8 @@ def predict():
     q1 = request.form['q1']
     q2 = request.form['q2']
 
-    # 🔥 HARD RULE: exact same question
     if q1.strip().lower() == q2.strip().lower():
-        return render_template(
-            'index.html',
-            prediction="Duplicate Questions ✅"
-        )
+        return render_template('index.html', prediction="Duplicate Questions ✅")
 
     X = get_features(q1, q2)
     pred = model.predict(X)[0]
@@ -71,4 +68,4 @@ def predict():
     return render_template('index.html', prediction=result)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)
