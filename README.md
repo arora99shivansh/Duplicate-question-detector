@@ -45,20 +45,20 @@ The project combines **NLP feature engineering**, **Machine Learning**, and a **
 ---
 
 ## 📂 Project Structure
-```duplicate-question-detector/
-│
+
+```text
+duplicate-question-detector/
 ├── app.py                # Flask application
 ├── model.pkl             # Trained ML model
-├── cv.pkl                # CountVectorizer
+├── cv.pkl                # CountVectorizer object
 ├── requirements.txt      # Python dependencies
 ├── Dockerfile            # Docker configuration
-│
 ├── templates/
 │   └── index.html        # Frontend UI
-│
 ├── train.csv             # Training data
 ├── test.csv              # Test data
-└── README.md             # Project documentation```
+└── README.md             # Project documentation
+```
 
 
 ## ⚙️ How It Works
