@@ -24,6 +24,18 @@ def preprocess(text):
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
+# ---------------- simple semantic rule ----------------
+def simple_semantic_match(q1, q2):
+    q1_tokens = set(preprocess(q1).split())
+    q2_tokens = set(preprocess(q2).split())
+
+    if not q1_tokens or not q2_tokens:
+        return False
+
+    common_ratio = len(q1_tokens & q2_tokens) / min(len(q1_tokens), len(q2_tokens))
+
+    return common_ratio >= 0.6   # 🔥 threshold (60%)
+
 # ---------------- feature generator ----------------
 def get_features(q1, q2):
     q1 = preprocess(q1)
@@ -42,7 +54,9 @@ def get_features(q1, q2):
     features = np.hstack((features, fuzzy))
 
     if features.shape[0] < EXPECTED_FEATURES:
-        features = np.hstack((features, np.zeros(EXPECTED_FEATURES - features.shape[0])))
+        features = np.hstack(
+            (features, np.zeros(EXPECTED_FEATURES - features.shape[0]))
+        )
     else:
         features = features[:EXPECTED_FEATURES]
 
@@ -58,9 +72,21 @@ def predict():
     q1 = request.form['q1']
     q2 = request.form['q2']
 
-    if q1.strip().lower() == q2.strip().lower():
-        return render_template('index.html', prediction="Duplicate Questions ✅")
+    # 1️⃣ Exact match (bulletproof)
+    if preprocess(q1) == preprocess(q2):
+        return render_template(
+            'index.html',
+            prediction="Duplicate Questions ✅"
+        )
 
+    # 2️⃣ Simple semantic rule (FIXES YOUR ISSUE)
+    if simple_semantic_match(q1, q2):
+        return render_template(
+            'index.html',
+            prediction="Duplicate Questions ✅"
+        )
+
+    # 3️⃣ ML model
     X = get_features(q1, q2)
     pred = model.predict(X)[0]
 
