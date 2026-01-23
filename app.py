@@ -24,17 +24,43 @@ def preprocess(text):
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
-# ---------------- simple semantic rule ----------------
-def simple_semantic_match(q1, q2):
-    q1_tokens = set(preprocess(q1).split())
-    q2_tokens = set(preprocess(q2).split())
+# ---------------- intent + topic rule (SHORT QUESTIONS FIX) ----------------
+def intent_match(q1, q2):
+    q1p = preprocess(q1)
+    q2p = preprocess(q2)
 
-    if not q1_tokens or not q2_tokens:
+    intent_words = {"what", "explain", "define", "meaning", "describe"}
+
+    q1_tokens = set(q1p.split())
+    q2_tokens = set(q2p.split())
+
+    # extract core topic (remove intent words)
+    q1_topic = q1_tokens - intent_words
+    q2_topic = q2_tokens - intent_words
+
+    if not q1_topic or not q2_topic:
+        return False
+
+    topic_overlap = len(q1_topic & q2_topic) / min(len(q1_topic), len(q2_topic))
+
+    return topic_overlap >= 0.8
+
+# ---------------- semantic + fuzzy rule ----------------
+def semantic_fuzzy_match(q1, q2):
+    q1p = preprocess(q1)
+    q2p = preprocess(q2)
+
+    q1_tokens = set(q1p.split())
+    q2_tokens = set(q2p.split())
+
+    # protect short questions
+    if len(q1_tokens) < 4 or len(q2_tokens) < 4:
         return False
 
     common_ratio = len(q1_tokens & q2_tokens) / min(len(q1_tokens), len(q2_tokens))
+    fuzzy_score = fuzz.token_set_ratio(q1p, q2p)
 
-    return common_ratio >= 0.6   # 🔥 threshold (60%)
+    return common_ratio >= 0.75 and fuzzy_score >= 85
 
 # ---------------- feature generator ----------------
 def get_features(q1, q2):
@@ -69,29 +95,28 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    q1 = request.form['q1']
-    q2 = request.form['q2']
+    q1 = request.form.get('q1', '')
+    q2 = request.form.get('q2', '')
 
-    # 1️⃣ Exact match (bulletproof)
+    # 1️⃣ Exact match
     if preprocess(q1) == preprocess(q2):
-        return render_template(
-            'index.html',
-            prediction="Duplicate Questions ✅"
-        )
+        return render_template('index.html', prediction="Duplicate Questions ✅")
 
-    # 2️⃣ Simple semantic rule (FIXES YOUR ISSUE)
-    if simple_semantic_match(q1, q2):
-        return render_template(
-            'index.html',
-            prediction="Duplicate Questions ✅"
-        )
+    # 2️⃣ Intent + topic rule
+    if intent_match(q1, q2):
+        return render_template('index.html', prediction="Duplicate Questions ✅")
 
-    # 3️⃣ ML model
+    # 3️⃣ Semantic + fuzzy rule
+    if semantic_fuzzy_match(q1, q2):
+        return render_template('index.html', prediction="Duplicate Questions ✅")
+
+    # 4️⃣ ML model
     X = get_features(q1, q2)
     pred = model.predict(X)[0]
 
     result = "Duplicate Questions ✅" if pred == 1 else "Not Duplicate ❌"
     return render_template('index.html', prediction=result)
 
+# ---------------- run app ----------------
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
